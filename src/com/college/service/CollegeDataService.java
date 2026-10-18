@@ -1,54 +1,40 @@
 
 package com.college.service;
 
+import com.college.dao.CollegeDAO;
 import com.college.model.College;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CollegeDataService {
 
-    private static final List<College> colleges = new ArrayList<>();
-
-    static {
-        colleges.add(new College(
-                1, "Example Engineering College",
-                "Pune", "Example University", "Pune, Maharashtra"
-        ));
-
-        colleges.add(new College(
-                2, "Sample Institute of Technology",
-                "Mumbai", "Sample University", "Mumbai, Maharashtra"
-        ));
-    }
+    private static final CollegeDAO collegeDAO = new CollegeDAO();
 
     public static List<College> getColleges() {
-        return new ArrayList<>(colleges);
+        return collegeDAO.getAllColleges();
     }
 
     public static void addCollege(College college) {
-        colleges.add(college);
+        if (!collegeDAO.addCollege(college)) {
+            System.out.println("Failed to add college.");
+        }
     }
 
     public static void updateCollege(College updatedCollege) {
-        for (int i = 0; i < colleges.size(); i++) {
-            if (colleges.get(i).getCollegeId()
-                    == updatedCollege.getCollegeId()) {
-                colleges.set(i, updatedCollege);
-                return;
-            }
+        if (!collegeDAO.updateCollege(updatedCollege)) {
+            System.out.println("Failed to update college.");
         }
     }
 
     public static void deleteCollege(int collegeId) {
-        colleges.removeIf(
-                college -> college.getCollegeId() == collegeId
-        );
+        if (!collegeDAO.deleteCollege(collegeId)) {
+            System.out.println("Failed to delete college.");
+        }
     }
 
     public static int getNextId() {
         int maxId = 0;
 
-        for (College college : colleges) {
+        for (College college : getColleges()) {
             if (college.getCollegeId() > maxId) {
                 maxId = college.getCollegeId();
             }

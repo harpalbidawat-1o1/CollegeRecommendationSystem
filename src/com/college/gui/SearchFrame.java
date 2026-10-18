@@ -4,6 +4,7 @@ package com.college.gui;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.Collections;
 
 import com.college.model.College;
 import com.college.model.Course;
@@ -23,11 +24,11 @@ public class SearchFrame extends JFrame {
         courses = recommendationService.getCourses();
 
         setTitle("Search Colleges");
-        setSize(750, 450);
+        setSize(750, 500);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JPanel panel = new JPanel(new GridLayout(6, 2, 10, 10));
+        JPanel panel = new JPanel(new GridLayout(7, 2, 10, 10));
         panel.setBorder(
                 BorderFactory.createEmptyBorder(25, 30, 25, 30)
         );
@@ -44,6 +45,30 @@ public class SearchFrame extends JFrame {
         JComboBox<String> categoryBox = new JComboBox<>(categories);
         JTextField cityField = new JTextField();
 
+        DefaultComboBoxModel<String> branchModel =
+                new DefaultComboBoxModel<>();
+
+        branchModel.addElement("All Branches");
+
+        for (Course course : courses) {
+            String courseName = course.getCourseName();
+            boolean exists = false;
+
+            for (int i = 0; i < branchModel.getSize(); i++) {
+                if (branchModel.getElementAt(i)
+                        .equalsIgnoreCase(courseName)) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                branchModel.addElement(courseName);
+            }
+        }
+
+        JComboBox<String> branchBox = new JComboBox<>(branchModel);
+
         JButton searchButton = new JButton("Search");
         JButton backButton = new JButton("Back to Home");
 
@@ -59,6 +84,9 @@ public class SearchFrame extends JFrame {
         panel.add(new JLabel("Preferred City:"));
         panel.add(cityField);
 
+        panel.add(new JLabel("Preferred Branch:"));
+        panel.add(branchBox);
+
         panel.add(searchButton);
         panel.add(backButton);
 
@@ -68,6 +96,7 @@ public class SearchFrame extends JFrame {
             String percentile = percentileField.getText().trim();
             String category = (String) categoryBox.getSelectedItem();
             String city = cityField.getText().trim();
+            String branch = (String) branchBox.getSelectedItem();
 
             if (percentile.isEmpty()) {
                 JOptionPane.showMessageDialog(
@@ -91,18 +120,23 @@ public class SearchFrame extends JFrame {
                                 value, category
                         );
 
-                RecommendationHistoryService.saveRecommendations(
-                        recommendations
-                );
-
                 DefaultListModel<String> listModel =
                         new DefaultListModel<>();
 
                 for (String result : recommendations) {
-                    if (city.isEmpty()
-                            || result.toLowerCase().contains(
-                                    city.toLowerCase()
-                            )) {
+                    String lowerResult = result.toLowerCase();
+
+                    boolean matchesCity =
+                            city.isEmpty()
+                            || lowerResult.contains(city.toLowerCase());
+
+                    boolean matchesBranch =
+                            branch.equals("All Branches")
+                            || lowerResult.contains(
+                                    branch.toLowerCase()
+                            );
+
+                    if (matchesCity && matchesBranch) {
                         listModel.addElement(result);
                     }
                 }
@@ -113,6 +147,10 @@ public class SearchFrame extends JFrame {
                     );
                     return;
                 }
+
+                RecommendationHistoryService.saveRecommendations(
+                        Collections.list(listModel.elements())
+                );
 
                 JList<String> resultList = new JList<>(listModel);
                 resultList.setSelectionMode(
@@ -201,7 +239,6 @@ public class SearchFrame extends JFrame {
                                             this,
                                             "This college is already bookmarked."
                                     );
-
                                 } else {
                                     BookmarkService.bookmarkCollege(college);
 
