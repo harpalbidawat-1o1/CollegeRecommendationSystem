@@ -3,15 +3,23 @@ package com.college.gui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
+import com.college.model.College;
+import com.college.model.Course;
+import com.college.model.Cutoff;
 import com.college.service.RecommendationService;
 
 public class SearchFrame extends JFrame {
 
     private final RecommendationService recommendationService;
+    private final List<College> colleges;
+    private final List<Course> courses;
 
     public SearchFrame() {
         recommendationService = new RecommendationService();
+        colleges = recommendationService.getColleges();
+        courses = recommendationService.getCourses();
 
         setTitle("Search Colleges");
         setSize(750, 450);
@@ -75,35 +83,69 @@ public class SearchFrame extends JFrame {
                     return;
                 }
 
-                List<String> results =
+                List<String> recommendations =
                     recommendationService.recommendColleges(value, category);
 
-                StringBuilder output = new StringBuilder();
+                DefaultListModel<String> listModel = new DefaultListModel<>();
 
-                for (String result : results) {
+                for (String result : recommendations) {
                     if (city.isEmpty()
                             || result.toLowerCase().contains(city.toLowerCase())) {
-                        output.append(result).append("\n\n");
+                        listModel.addElement(result);
                     }
                 }
 
-                if (output.length() == 0) {
-                    output.append("No matching colleges found.");
+                if (listModel.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                        this, "No matching colleges found."
+                    );
+                    return;
                 }
 
-                JTextArea resultsArea = new JTextArea(output.toString());
-                resultsArea.setEditable(false);
-                resultsArea.setLineWrap(true);
-                resultsArea.setWrapStyleWord(true);
+                JList<String> resultList = new JList<>(listModel);
+                resultList.setSelectionMode(
+                    ListSelectionModel.SINGLE_SELECTION
+                );
 
-                JScrollPane scrollPane = new JScrollPane(resultsArea);
-                scrollPane.setPreferredSize(new Dimension(550, 250));
+                JButton detailsButton = new JButton("View College Details");
+
+                JPanel resultPanel = new JPanel(new BorderLayout(10, 10));
+                resultPanel.add(new JScrollPane(resultList), BorderLayout.CENTER);
+                resultPanel.add(detailsButton, BorderLayout.SOUTH);
+
+                detailsButton.addActionListener(event -> {
+                    int selectedIndex = resultList.getSelectedIndex();
+
+                    if (selectedIndex == -1) {
+                        JOptionPane.showMessageDialog(
+                            this, "Please select a result first."
+                        );
+                        return;
+                    }
+
+                    String selectedResult = resultList.getSelectedValue();
+
+                    for (Course course : courses) {
+                        for (College college : colleges) {
+                            String prefix = college.getCollegeName()
+                                + " | " + college.getCity()
+                                + " | " + course.getCourseName() + " |";
+
+                            if (selectedResult.startsWith(prefix)
+                                    && course.getCollegeId() == college.getCollegeId()) {
+                                new CollegeDetailsFrame(college, courses)
+                                    .setVisible(true);
+                                return;
+                            }
+                        }
+                    }
+                });
 
                 JOptionPane.showMessageDialog(
                     this,
-                    scrollPane,
+                    resultPanel,
                     "College Recommendations",
-                    JOptionPane.INFORMATION_MESSAGE
+                    JOptionPane.PLAIN_MESSAGE
                 );
 
             } catch (NumberFormatException ex) {

@@ -68,4 +68,11 @@ public class RecommendationService {
 
         return recommendations;
     }
+        public List<College> getColleges() {
+        return new ArrayList<>(colleges);
+    }
+
+    public List<Course> getCourses() {
+        return new ArrayList<>(courses);
+    }
 }
