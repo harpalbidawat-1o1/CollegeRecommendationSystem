@@ -1,8 +1,10 @@
 
 package com.college;
+
 import com.college.gui.AdminFrame;
 import com.college.gui.SearchFrame;
 import com.college.gui.CollegeDirectoryFrame;
+import com.college.gui.MyRecommendationsFrame;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +25,9 @@ public class Main {
                     SwingConstants.CENTER
             );
             title.setFont(new Font("Arial", Font.BOLD, 22));
-            title.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
+            title.setBorder(
+                    BorderFactory.createEmptyBorder(20, 10, 10, 10)
+            );
 
             JPanel panel = new JPanel(new GridLayout(5, 1, 12, 12));
             panel.setBorder(
@@ -32,7 +36,8 @@ public class Main {
 
             JButton findButton = new JButton("Find Colleges");
             JButton searchButton = new JButton("Search Colleges");
-            JButton recommendationButton = new JButton("My Recommendations");
+            JButton recommendationButton =
+                    new JButton("My Recommendations");
             JButton adminButton = new JButton("Admin");
             JButton exitButton = new JButton("Exit");
 
@@ -51,15 +56,12 @@ public class Main {
             );
 
             recommendationButton.addActionListener(e ->
-                    JOptionPane.showMessageDialog(
-                            frame,
-                            "Recommendations will be added next."
-                    )
+                    new MyRecommendationsFrame().setVisible(true)
             );
 
             adminButton.addActionListener(e ->
-    new AdminFrame().setVisible(true)
-);
+                    new AdminFrame().setVisible(true)
+            );
 
             exitButton.addActionListener(e -> frame.dispose());
 

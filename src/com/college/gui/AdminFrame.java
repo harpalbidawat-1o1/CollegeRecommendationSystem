@@ -3,7 +3,6 @@ package com.college.gui;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -17,6 +16,12 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
 import com.college.model.College;
+import com.college.model.Course;
+import com.college.model.Cutoff;
+import com.college.service.BookmarkService;
+import com.college.service.CollegeDataService;
+import com.college.service.CourseDataService;
+import com.college.service.CutoffDataService;
 
 public class AdminFrame extends JFrame {
 
@@ -30,20 +35,10 @@ public class AdminFrame extends JFrame {
     private JTextField addressField;
 
     public AdminFrame() {
-        colleges = new ArrayList<>();
-
-        colleges.add(new College(
-                1, "Example Engineering College",
-                "Pune", "Example University", "Pune, Maharashtra"
-        ));
-
-        colleges.add(new College(
-                2, "Sample Institute of Technology",
-                "Mumbai", "Sample University", "Mumbai, Maharashtra"
-        ));
+        colleges = CollegeDataService.getColleges();
 
         setTitle("Admin - Manage Colleges");
-        setSize(850, 500);
+        setSize(950, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
@@ -55,7 +50,9 @@ public class AdminFrame extends JFrame {
         add(heading, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(
-                new String[]{"ID", "College Name", "City", "University", "Address"}, 0
+                new String[]{
+                    "ID", "College Name", "City", "University", "Address"
+                }, 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -88,15 +85,27 @@ public class AdminFrame extends JFrame {
         JButton deleteButton = new JButton("Delete Selected");
         JButton clearButton = new JButton("Clear Fields");
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 5, 5));
-        buttonPanel.add(addButton);
-        buttonPanel.add(updateButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(clearButton);
+        JPanel collegeButtonPanel =
+                new JPanel(new GridLayout(1, 4, 5, 5));
 
-        JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
-        bottomPanel.add(formPanel, BorderLayout.CENTER);
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+        collegeButtonPanel.add(addButton);
+        collegeButtonPanel.add(updateButton);
+        collegeButtonPanel.add(deleteButton);
+        collegeButtonPanel.add(clearButton);
+
+        JButton coursesButton = new JButton("Manage Courses");
+        JButton cutoffsButton = new JButton("Manage Cutoffs");
+
+        JPanel managementPanel =
+                new JPanel(new GridLayout(1, 2, 5, 5));
+
+        managementPanel.add(coursesButton);
+        managementPanel.add(cutoffsButton);
+
+        JPanel bottomPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        bottomPanel.add(formPanel);
+        bottomPanel.add(collegeButtonPanel);
+        bottomPanel.add(managementPanel);
 
         add(bottomPanel, BorderLayout.SOUTH);
 
@@ -104,6 +113,14 @@ public class AdminFrame extends JFrame {
         updateButton.addActionListener(e -> updateCollege());
         deleteButton.addActionListener(e -> deleteCollege());
         clearButton.addActionListener(e -> clearFields());
+
+        coursesButton.addActionListener(e ->
+                new CourseManagementFrame().setVisible(true)
+        );
+
+        cutoffsButton.addActionListener(e ->
+                new CutoffManagementFrame().setVisible(true)
+        );
 
         collegeTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -115,6 +132,7 @@ public class AdminFrame extends JFrame {
     }
 
     private void refreshTable() {
+        colleges = CollegeDataService.getColleges();
         tableModel.setRowCount(0);
 
         for (College college : colleges) {
@@ -133,13 +151,7 @@ public class AdminFrame extends JFrame {
             return;
         }
 
-        int nextId = 1;
-
-        for (College college : colleges) {
-            if (college.getCollegeId() >= nextId) {
-                nextId = college.getCollegeId() + 1;
-            }
-        }
+        int nextId = CollegeDataService.getNextId();
 
         College college = new College(
                 nextId,
@@ -149,18 +161,23 @@ public class AdminFrame extends JFrame {
                 addressField.getText().trim()
         );
 
-        colleges.add(college);
+        CollegeDataService.addCollege(college);
+
         refreshTable();
         clearFields();
 
-        JOptionPane.showMessageDialog(this, "College added successfully.");
+        JOptionPane.showMessageDialog(
+                this, "College added successfully."
+        );
     }
 
     private void updateCollege() {
         int row = collegeTable.getSelectedRow();
 
         if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a college to update.");
+            JOptionPane.showMessageDialog(
+                    this, "Select a college to update."
+            );
             return;
         }
 
@@ -170,33 +187,37 @@ public class AdminFrame extends JFrame {
 
         int id = (int) tableModel.getValueAt(row, 0);
 
-        for (College college : colleges) {
-            if (college.getCollegeId() == id) {
-                college.setCollegeName(nameField.getText().trim());
-                college.setCity(cityField.getText().trim());
-                college.setUniversity(universityField.getText().trim());
-                college.setAddress(addressField.getText().trim());
-                break;
-            }
-        }
+        College updatedCollege = new College(
+                id,
+                nameField.getText().trim(),
+                cityField.getText().trim(),
+                universityField.getText().trim(),
+                addressField.getText().trim()
+        );
+
+        CollegeDataService.updateCollege(updatedCollege);
 
         refreshTable();
         clearFields();
 
-        JOptionPane.showMessageDialog(this, "College updated successfully.");
+        JOptionPane.showMessageDialog(
+                this, "College updated successfully."
+        );
     }
 
     private void deleteCollege() {
         int row = collegeTable.getSelectedRow();
 
         if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a college to delete.");
+            JOptionPane.showMessageDialog(
+                    this, "Select a college to delete."
+            );
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Are you sure you want to delete this college?",
+                "Are you sure you want to delete this college and its related records?",
                 "Confirm Delete",
                 JOptionPane.YES_NO_OPTION
         );
@@ -207,12 +228,32 @@ public class AdminFrame extends JFrame {
 
         int id = (int) tableModel.getValueAt(row, 0);
 
-        colleges.removeIf(college -> college.getCollegeId() == id);
+        List<Course> courses =
+                CourseDataService.getCoursesByCollege(id);
+
+        for (Course course : courses) {
+            List<Cutoff> cutoffs =
+                    CutoffDataService.getCutoffsByCourse(
+                            course.getCourseId()
+                    );
+
+            for (Cutoff cutoff : cutoffs) {
+                CutoffDataService.deleteCutoff(cutoff.getCutoffId());
+            }
+
+            CourseDataService.deleteCourse(course.getCourseId());
+        }
+
+        CollegeDataService.deleteCollege(id);
+        BookmarkService.removeBookmark(id);
 
         refreshTable();
         clearFields();
 
-        JOptionPane.showMessageDialog(this, "College deleted successfully.");
+        JOptionPane.showMessageDialog(
+                this,
+                "College and its related records deleted successfully."
+        );
     }
 
     private void fillFields() {
@@ -235,8 +276,7 @@ public class AdminFrame extends JFrame {
                 || addressField.getText().trim().isEmpty()) {
 
             JOptionPane.showMessageDialog(
-                    this,
-                    "Please fill in all four fields."
+                    this, "Please fill in all four fields."
             );
 
             return false;

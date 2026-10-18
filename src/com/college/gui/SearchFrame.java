@@ -3,12 +3,13 @@ package com.college.gui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
+
 import com.college.model.College;
 import com.college.model.Course;
-import com.college.model.Cutoff;
 import com.college.service.RecommendationService;
+import com.college.service.RecommendationHistoryService;
+import com.college.service.BookmarkService;
 
 public class SearchFrame extends JFrame {
 
@@ -27,7 +28,9 @@ public class SearchFrame extends JFrame {
         setLocationRelativeTo(null);
 
         JPanel panel = new JPanel(new GridLayout(6, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
+        panel.setBorder(
+                BorderFactory.createEmptyBorder(25, 30, 25, 30)
+        );
 
         JLabel heading = new JLabel("Search Engineering Colleges");
         heading.setFont(new Font("Arial", Font.BOLD, 20));
@@ -37,8 +40,8 @@ public class SearchFrame extends JFrame {
         String[] categories = {
             "OPEN", "OBC", "SC", "ST", "EWS", "VJ", "DT", "NT"
         };
-        JComboBox<String> categoryBox = new JComboBox<>(categories);
 
+        JComboBox<String> categoryBox = new JComboBox<>(categories);
         JTextField cityField = new JTextField();
 
         JButton searchButton = new JButton("Search");
@@ -68,7 +71,7 @@ public class SearchFrame extends JFrame {
 
             if (percentile.isEmpty()) {
                 JOptionPane.showMessageDialog(
-                    this, "Please enter your percentile."
+                        this, "Please enter your percentile."
                 );
                 return;
             }
@@ -78,79 +81,158 @@ public class SearchFrame extends JFrame {
 
                 if (value < 0 || value > 100) {
                     JOptionPane.showMessageDialog(
-                        this, "Percentile must be between 0 and 100."
+                            this, "Percentile must be between 0 and 100."
                     );
                     return;
                 }
 
                 List<String> recommendations =
-                    recommendationService.recommendColleges(value, category);
+                        recommendationService.recommendColleges(
+                                value, category
+                        );
 
-                DefaultListModel<String> listModel = new DefaultListModel<>();
+                RecommendationHistoryService.saveRecommendations(
+                        recommendations
+                );
+
+                DefaultListModel<String> listModel =
+                        new DefaultListModel<>();
 
                 for (String result : recommendations) {
                     if (city.isEmpty()
-                            || result.toLowerCase().contains(city.toLowerCase())) {
+                            || result.toLowerCase().contains(
+                                    city.toLowerCase()
+                            )) {
                         listModel.addElement(result);
                     }
                 }
 
                 if (listModel.isEmpty()) {
                     JOptionPane.showMessageDialog(
-                        this, "No matching colleges found."
+                            this, "No matching colleges found."
                     );
                     return;
                 }
 
                 JList<String> resultList = new JList<>(listModel);
                 resultList.setSelectionMode(
-                    ListSelectionModel.SINGLE_SELECTION
+                        ListSelectionModel.SINGLE_SELECTION
                 );
 
-                JButton detailsButton = new JButton("View College Details");
+                JButton detailsButton =
+                        new JButton("View College Details");
 
-                JPanel resultPanel = new JPanel(new BorderLayout(10, 10));
-                resultPanel.add(new JScrollPane(resultList), BorderLayout.CENTER);
-                resultPanel.add(detailsButton, BorderLayout.SOUTH);
+                JButton bookmarkButton =
+                        new JButton("Bookmark College");
+
+                JPanel resultPanel =
+                        new JPanel(new BorderLayout(10, 10));
+
+                JPanel buttonPanel = new JPanel();
+                buttonPanel.add(detailsButton);
+                buttonPanel.add(bookmarkButton);
+
+                resultPanel.add(
+                        new JScrollPane(resultList),
+                        BorderLayout.CENTER
+                );
+
+                resultPanel.add(buttonPanel, BorderLayout.SOUTH);
 
                 detailsButton.addActionListener(event -> {
-                    int selectedIndex = resultList.getSelectedIndex();
+                    String selectedResult = resultList.getSelectedValue();
 
-                    if (selectedIndex == -1) {
+                    if (selectedResult == null) {
                         JOptionPane.showMessageDialog(
-                            this, "Please select a result first."
+                                this, "Please select a result first."
                         );
                         return;
                     }
 
-                    String selectedResult = resultList.getSelectedValue();
-
                     for (Course course : courses) {
                         for (College college : colleges) {
-                            String prefix = college.getCollegeName()
-                                + " | " + college.getCity()
-                                + " | " + course.getCourseName() + " |";
+                            String prefix =
+                                    college.getCollegeName()
+                                    + " | " + college.getCity()
+                                    + " | " + course.getCourseName() + " |";
 
                             if (selectedResult.startsWith(prefix)
-                                    && course.getCollegeId() == college.getCollegeId()) {
-                                new CollegeDetailsFrame(college, courses)
-                                    .setVisible(true);
+                                    && course.getCollegeId()
+                                            == college.getCollegeId()) {
+
+                                new CollegeDetailsFrame(
+                                        college, courses
+                                ).setVisible(true);
                                 return;
                             }
                         }
                     }
+
+                    JOptionPane.showMessageDialog(
+                            this, "Could not find the selected college."
+                    );
+                });
+
+                bookmarkButton.addActionListener(event -> {
+                    String selectedResult = resultList.getSelectedValue();
+
+                    if (selectedResult == null) {
+                        JOptionPane.showMessageDialog(
+                                this, "Please select a result first."
+                        );
+                        return;
+                    }
+
+                    for (Course course : courses) {
+                        for (College college : colleges) {
+                            String prefix =
+                                    college.getCollegeName()
+                                    + " | " + college.getCity()
+                                    + " | " + course.getCourseName() + " |";
+
+                            if (selectedResult.startsWith(prefix)
+                                    && course.getCollegeId()
+                                            == college.getCollegeId()) {
+
+                                if (BookmarkService.isBookmarked(
+                                        college.getCollegeId())) {
+
+                                    JOptionPane.showMessageDialog(
+                                            this,
+                                            "This college is already bookmarked."
+                                    );
+
+                                } else {
+                                    BookmarkService.bookmarkCollege(college);
+
+                                    JOptionPane.showMessageDialog(
+                                            this,
+                                            college.getCollegeName()
+                                                    + " bookmarked successfully."
+                                    );
+                                }
+
+                                return;
+                            }
+                        }
+                    }
+
+                    JOptionPane.showMessageDialog(
+                            this, "Could not find the selected college."
+                    );
                 });
 
                 JOptionPane.showMessageDialog(
-                    this,
-                    resultPanel,
-                    "College Recommendations",
-                    JOptionPane.PLAIN_MESSAGE
+                        this,
+                        resultPanel,
+                        "College Recommendations",
+                        JOptionPane.PLAIN_MESSAGE
                 );
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(
-                    this, "Please enter a valid numeric percentile."
+                        this,
+                        "Please enter a valid numeric percentile."
                 );
             }
         });

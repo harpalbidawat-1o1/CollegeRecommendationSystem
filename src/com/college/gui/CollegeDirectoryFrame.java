@@ -15,6 +15,7 @@ import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 
 import com.college.model.College;
+import com.college.service.CollegeDataService;
 import com.college.service.RecommendationService;
 
 public class CollegeDirectoryFrame extends JFrame {
@@ -23,8 +24,7 @@ public class CollegeDirectoryFrame extends JFrame {
     private JList<College> collegeList;
 
     public CollegeDirectoryFrame() {
-        RecommendationService service = new RecommendationService();
-        colleges = service.getColleges();
+        colleges = CollegeDataService.getColleges();
 
         setTitle("College Directory");
         setSize(650, 400);
@@ -57,7 +57,9 @@ public class CollegeDirectoryFrame extends JFrame {
         College selectedCollege = collegeList.getSelectedValue();
 
         if (selectedCollege == null) {
-            JOptionPane.showMessageDialog(this, "Please select a college first.");
+            JOptionPane.showMessageDialog(
+                    this, "Please select a college first."
+            );
             return;
         }
 
