@@ -6,6 +6,9 @@ import com.college.model.Course;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
+
+
 
 /** Database-backed percentile recommendations using the final collegedb schema. */
 public class RecommendationService {
@@ -16,7 +19,7 @@ public class RecommendationService {
     }
 
     public List<String> recommendColleges(double percentile, String category, String preferredCity, String preferredBranch) {
-        List<String> recommendations = new ArrayList<>();
+        Vector<String> recommendations = new Vector<>();
         String city = preferredCity == null || preferredCity.trim().isEmpty() ? null : preferredCity.trim();
         String branch = preferredBranch == null || preferredBranch.equalsIgnoreCase("All Branches") || preferredBranch.trim().isEmpty()
                 ? null : preferredBranch.trim();
